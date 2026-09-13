@@ -82,7 +82,7 @@ FLYER = f"""
 
   /* The snap container: this is the only thing that scrolls. */
   .deck {{
-    height: 100dvh;
+    height: var(--vh, 100dvh);
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
     -webkit-overflow-scrolling: touch;
@@ -92,7 +92,7 @@ FLYER = f"""
 
   .panel {{
     position: relative;
-    height: 100dvh;
+    height: var(--vh, 100dvh);
     scroll-snap-align: start;
     scroll-snap-stop: always;   /* never skip past a panel on a fast flick */
     display: flex;
@@ -166,26 +166,84 @@ FLYER = f"""
   <div class="deck">
     {''.join(build_panel(p, i) for i, p in enumerate(PANELS))}
   </div>
+  <script>
+    // Size the flyer to the REAL viewport rather than trusting Streamlit's
+    // fixed iframe height. `100dvh` inside an iframe resolves against the
+    // iframe's own box, so a 900px iframe gives 900px panels on a 760px phone:
+    // text sits below centre and the bottom is clipped. Measuring the parent
+    // window avoids depending on Streamlit's internal CSS class names.
+    function fit() {{
+      var h = window.innerHeight;
+      try {{
+        if (window.parent && window.parent !== window && window.parent.innerHeight) {{
+          h = window.parent.innerHeight;
+        }}
+      }} catch (e) {{ /* cross-origin: fall back to our own height */ }}
+
+      document.documentElement.style.setProperty('--vh', h + 'px');
+
+      // Also shrink the iframe element itself, when same-origin lets us.
+      try {{
+        var fe = window.frameElement;
+        if (fe) {{ fe.style.height = h + 'px'; fe.style.width = '100vw'; }}
+      }} catch (e) {{}}
+    }}
+
+    fit();
+    addEventListener('resize', fit);
+    addEventListener('orientationchange', fit);
+    try {{ window.parent.addEventListener('resize', fit); }} catch (e) {{}}
+    // Streamlit resizes the frame after mount; re-measure once it settles.
+    [100, 500, 1500].forEach(function (d) {{ setTimeout(fit, d); }});
+  </script>
 </body>
 </html>
 """
 
 # --- Strip all Streamlit chrome and let the component fill the whole screen ---
+# NB: these data-testid / iframe title values are Streamlit internals and can be
+# renamed between versions. If the flyer ever stops filling the screen, re-check
+# them first -- that is exactly what broke mobile the first time round.
 st.markdown(
     """
     <style>
       #MainMenu, header, footer, [data-testid="stToolbar"],
-      [data-testid="stDecoration"], [data-testid="stStatusWidget"] { display: none !important; }
-      .stApp { overflow: hidden !important; }
-      .block-container { padding: 0 !important; max-width: 100% !important; }
-      [data-testid="stAppViewBlockContainer"] { padding: 0 !important; }
-      [data-testid="stVerticalBlock"] { gap: 0 !important; }
-      iframe[title="streamlit.components.v1.html"],
-      iframe[title="streamlitApp"], .stCustomComponentV1 {
+      [data-testid="stDecoration"], [data-testid="stStatusWidget"],
+      [data-testid="stBottom"],
+      /* Community Cloud host chrome: "Manage app" and the Streamlit badge.
+         These are injected by the host, not the OSS build, so the selectors
+         are best-effort and may need revisiting. */
+      [data-testid="stAppDeployButton"], [data-testid="manage-app-button"],
+      .viewerBadge_container__1QSob, .viewerBadge_link__qRIco,
+      a[href*="streamlit.io/cloud"], iframe[title="streamlitApp"] { display: none !important; }
+
+      /* No white gap under the flyer if anything is ever shorter than the screen. */
+      body, .stApp { background: #000 !important; }
+
+      html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+        height: 100dvh !important;
+        overflow: hidden !important;
+      }
+
+      /* Kill the default page padding that would push the flyer down the screen. */
+      .block-container,
+      [data-testid="stMainBlockContainer"] {
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+      [data-testid="stVerticalBlock"],
+      [data-testid="stVerticalBlockBorderWrapper"] { gap: 0 !important; }
+
+      /* The component iframe must match the real viewport, not its fixed height
+         attribute: 100dvh inside the iframe resolves against the IFRAME's box,
+         so a 900px iframe gives 900px panels whatever the phone screen is. */
+      iframe[title="st.iframe"],
+      [data-testid="stIFrame"],
+      [data-testid="stCustomComponentV1"] {
         height: 100dvh !important;
         width: 100vw !important;
-        display: block;
-        border: none;
+        display: block !important;
+        border: none !important;
       }
     </style>
     """,
