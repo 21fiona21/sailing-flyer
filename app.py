@@ -23,7 +23,8 @@ IMAGES = Path(__file__).parent / "images"
 PANELS = [
     {
         "key": "welcome",
-        "title": 'Welcome to the <span class="logo">{logo}</span> sailing club!',
+        "greeting": "Welcome aboard!",
+        "club": "HSG Sailing",
         "text": "Scroll down",
         "color": "#0b3d6b",
         "hero": True,          # hero panel has no back face
@@ -115,7 +116,7 @@ def photo_data_uri(slug: str) -> str:
 
 
 def render_panel(panel: dict, index: int, total: int) -> str:
-    title = panel["title"].replace("{logo}", LOGO)
+    title = panel.get("title", "").replace("{logo}", LOGO)
     photo = photo_data_uri(panel["key"])
     background = f"url('{photo}')" if photo else panel["color"]
     dots = "".join(
@@ -123,14 +124,16 @@ def render_panel(panel: dict, index: int, total: int) -> str:
     )
 
     if panel.get("hero"):
-        # Hero panel: no flip, just the invitation to scroll.
+        # Hero panel: no flip, just the masthead and the nudge to scroll.
         return f"""
         <section class="panel">
           <div class="card">
             <div class="face front" style="background-image: {background};">
               <div class="scrim"></div>
-              <div class="content">
-                <h1>{title}</h1>
+              <div class="content hero-content">
+                <p class="greeting">{panel["greeting"]}</p>
+                <div class="hero-logo">{LOGO}</div>
+                <h1 class="club">{panel["club"]}</h1>
                 <p class="kicker">{panel["text"]}</p>
               </div>
               <div class="arrow" aria-hidden="true">&#8964;</div>
@@ -292,6 +295,35 @@ FLYER_TEMPLATE = """
 
   .logo { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.12em; margin: 0 .12em; }
   .logo svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 8px rgba(0,0,0,.45)); }
+
+  /* --- Hero masthead: greeting, logo, club name -------------------------- */
+  .hero-content { display: flex; flex-direction: column; align-items: center; }
+
+  .front .greeting {
+    margin: 0;
+    font-size: clamp(1.35rem, 6.2vw, 1.9rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    opacity: .95;
+  }
+
+  .hero-logo {
+    width: clamp(4.5rem, 27vw, 7rem);
+    margin: 1.15rem 0 .95rem;
+  }
+  .hero-logo svg {
+    width: 100%; height: auto; display: block;
+    filter: drop-shadow(0 3px 14px rgba(0,0,0,.5));
+  }
+
+  .club {
+    font-size: clamp(2.2rem, 12vw, 3.6rem);
+    line-height: 1.05;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    text-shadow: 0 2px 18px rgba(0,0,0,.5);
+  }
 
   /* --- Card back --------------------------------------------------------- */
   .back-content { text-align: left; }
