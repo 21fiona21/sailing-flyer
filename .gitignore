@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# Full-size photo downloads; only the cropped 9:16 versions are committed
-images/*.jpg
+# Only the cropped 9:16 photos and the credits are committed; full-size
+# originals (including phone HEICs) stay local.
+images/*
 !images/*.9x16.jpg
+!images/CREDITS.md
+!images/CREDITS.json
