@@ -1,179 +1,23 @@
-"""Digital flyer for the university sailing club.
+"""Digital flyer for HSG Sailing.
 
-Mobile-only, snap-scrolling one-pager. Each panel is a card: a 9:16 photo with
-a title on the front, a few bullet points on the colour-filled back.
+Mobile-only, snap-scrolling one-pager reached by scanning a QR code at the
+club fair. Each offering is a card: a 9:16 photo with the title on the front,
+the description on the colour-filled back.
+
+Copy lives in content.py, markup in render.py, icons in icons.py.
 
 The whole flyer lives inside ONE html component. Streamlit widgets are avoided
 on purpose -- any widget interaction triggers a server rerun, which would reset
 the visitor's scroll position mid-flyer.
 """
 
-import base64
-from pathlib import Path
-
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Sailing Club", layout="wide", initial_sidebar_state="collapsed")
+from content import PANELS
+from render import render_panels
 
-IMAGES = Path(__file__).parent / "images"
-
-# --- Content ------------------------------------------------------------------
-# `image` is the slug of images/<slug>.9x16.jpg. `color` tints the card back.
-PANELS = [
-    {
-        "key": "welcome",
-        "greeting": "Welcome aboard!",
-        "club": "HSG Sailing",
-        "text": "Scroll down",
-        "color": "#0b3d6b",
-        "hero": True,          # hero panel has no back face
-    },
-    {
-        "key": "beginner",
-        "title": "Beginner friendly",
-        "text": "Never touched a tiller? Perfect.",
-        "color": "#124e78",
-        "bullets": [
-            "No experience needed &mdash; we start on land",
-            "Boats, lifejackets and gear all provided",
-            "Your first taster sail is free",
-            "Intro evening every second Tuesday",
-        ],
-    },
-    {
-        "key": "theory",
-        "title": "Theory courses",
-        "text": "Learn the why, not just the how.",
-        "color": "#0f5c58",
-        "bullets": [
-            "Knots, right of way and weather basics",
-            "Wednesday evenings on campus",
-            "Optional licence exam prep",
-            "Course notes free for members",
-        ],
-    },
-    {
-        "key": "offshore",
-        "title": "Offshore turns",
-        "text": "A week at sea with the crew.",
-        "color": "#123f55",
-        "bullets": [
-            "One week aboard a 40ft yacht",
-            "Baltic in spring, Mediterranean in autumn",
-            "Split into watches &mdash; you really helm",
-            "Costs shared, kept student friendly",
-        ],
-    },
-    {
-        "key": "regatta",
-        "title": "Regatta",
-        "text": "Race other universities.",
-        "color": "#6b2d12",
-        "bullets": [
-            "Casual club races most weekends",
-            "University championships each term",
-            "Team racing in matched boats",
-            "Coaching from experienced helms",
-        ],
-    },
-    {
-        "key": "events",
-        "title": "Events",
-        "text": "The bit that isn't sailing.",
-        "color": "#3f2168",
-        "bullets": [
-            "Barbecues down at the boathouse",
-            "Boat maintenance weekends",
-            "Pub nights after training",
-            "The end-of-season party",
-        ],
-    },
-]
-
-# Placeholder logo: transparent inline SVG. Swap for the club's own SVG.
-LOGO = """
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <path d="M52 6 L52 78 L90 78 Z" fill="#ffffff" opacity="0.95"/>
-  <path d="M46 26 L46 78 L14 78 Z" fill="#ffffff" opacity="0.7"/>
-  <path d="M6 84 q22 10 44 0 q22 -10 44 0 l0 8 q-22 -10 -44 0 q-22 10 -44 0 Z" fill="#ffffff" opacity="0.9"/>
-</svg>
-"""
-
-
-@st.cache_data(show_spinner=False)
-def photo_data_uri(slug: str) -> str:
-    """Inline a photo as base64.
-
-    The component runs in a srcdoc iframe, so relative file paths do not
-    resolve -- inlining is what makes the photos show up both locally and on
-    Community Cloud.
-    """
-    path = IMAGES / f"{slug}.9x16.jpg"
-    if not path.exists():
-        return ""
-    return "data:image/jpeg;base64," + base64.b64encode(path.read_bytes()).decode()
-
-
-def render_panel(panel: dict, index: int, total: int) -> str:
-    title = panel.get("title", "").replace("{logo}", LOGO)
-    photo = photo_data_uri(panel["key"])
-    background = f"url('{photo}')" if photo else panel["color"]
-    dots = "".join(
-        f'<i class="{"on" if i == index else ""}"></i>' for i in range(total)
-    )
-
-    if panel.get("hero"):
-        # Hero panel: no flip, just the masthead and the nudge to scroll.
-        return f"""
-        <section class="panel">
-          <div class="card">
-            <div class="face front" style="background-image: {background};">
-              <div class="scrim"></div>
-              <div class="content hero-content">
-                <p class="greeting">{panel["greeting"]}</p>
-                <div class="hero-logo">{LOGO}</div>
-                <h1 class="club">{panel["club"]}</h1>
-                <p class="kicker">{panel["text"]}</p>
-              </div>
-              <div class="arrow" aria-hidden="true">&#8964;</div>
-            </div>
-          </div>
-          <div class="dots" aria-hidden="true">{dots}</div>
-        </section>
-        """
-
-    bullets = "".join(f"<li>{b}</li>" for b in panel.get("bullets", []))
-    return f"""
-    <section class="panel">
-      <div class="card" id="card-{index}">
-        <div class="face front" style="background-image: {background};">
-          <div class="scrim"></div>
-          <div class="content">
-            <h1>{title}</h1>
-            <p>{panel["text"]}</p>
-          </div>
-          <button class="pill" data-flip="{index}" aria-expanded="false"
-                  aria-label="More about {panel["title"]}">
-            More info <span aria-hidden="true">&#8250;</span>
-          </button>
-        </div>
-        <div class="face back" style="background: {panel["color"]};">
-          <div class="content back-content">
-            <h2>{panel["title"]}</h2>
-            <ul>{bullets}</ul>
-          </div>
-          <button class="pill" data-flip="{index}" aria-label="Back to photo">
-            <span aria-hidden="true">&#8249;</span> Back
-          </button>
-        </div>
-      </div>
-      <div class="dots" aria-hidden="true">{dots}</div>
-    </section>
-    """
-
-
-PANELS_HTML = "".join(render_panel(p, i, len(PANELS)) for i, p in enumerate(PANELS))
+st.set_page_config(page_title="HSG Sailing", layout="wide", initial_sidebar_state="collapsed")
 
 # Plain (non-f) template so CSS/JS braces need no escaping.
 FLYER_TEMPLATE = """
@@ -251,12 +95,16 @@ FLYER_TEMPLATE = """
     background-color: #0b3d6b;   /* shows while the photo decodes */
   }
 
-  .back { transform: rotateY(180deg); }   /* visibility rules are above */
+  .back { transform: rotateY(180deg); }
 
   /* Darkening layer so text stays readable over a busy photo. */
   .scrim {
     position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.28) 45%, rgba(0,0,0,.68) 100%);
+  }
+  /* Panels whose front carries a lot of text need more contrast. */
+  .scrim-strong {
+    background: linear-gradient(180deg, rgba(0,0,0,.66) 0%, rgba(0,0,0,.58) 45%, rgba(0,0,0,.78) 100%);
   }
 
   .content {
@@ -269,7 +117,7 @@ FLYER_TEMPLATE = """
   }
 
   h1 {
-    font-size: clamp(2rem, 11vw, 3.2rem);
+    font-size: clamp(1.9rem, 10vw, 3rem);
     line-height: 1.08;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -277,24 +125,22 @@ FLYER_TEMPLATE = """
     text-shadow: 0 2px 18px rgba(0,0,0,.5);
   }
 
-  .front p {
-    margin-top: .9rem;
+  .caption {
+    margin-top: .85rem;
     font-size: clamp(1rem, 4.2vw, 1.15rem);
-    line-height: 1.5;
+    line-height: 1.45;
     opacity: .9;
     text-shadow: 0 1px 10px rgba(0,0,0,.5);
   }
 
   .kicker {
-    margin-top: 1.6rem !important;
-    font-size: 1rem !important;
+    margin-top: 1.6rem;
+    font-size: 1rem;
     letter-spacing: .12em;
     text-transform: uppercase;
     opacity: .8;
+    text-shadow: 0 1px 10px rgba(0,0,0,.5);
   }
-
-  .logo { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.12em; margin: 0 .12em; }
-  .logo svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 8px rgba(0,0,0,.45)); }
 
   /* --- Hero masthead: greeting, logo, club name -------------------------- */
   .hero-content { display: flex; flex-direction: column; align-items: center; }
@@ -305,12 +151,10 @@ FLYER_TEMPLATE = """
     font-weight: 600;
     letter-spacing: -0.01em;
     opacity: .95;
+    text-shadow: 0 1px 10px rgba(0,0,0,.5);
   }
 
-  .hero-logo {
-    width: clamp(4.5rem, 27vw, 7rem);
-    margin: 1.15rem 0 .95rem;
-  }
+  .hero-logo { width: clamp(4.5rem, 27vw, 7rem); margin: 1.15rem 0 .95rem; }
   .hero-logo svg {
     width: 100%; height: auto; display: block;
     filter: drop-shadow(0 3px 14px rgba(0,0,0,.5));
@@ -321,46 +165,151 @@ FLYER_TEMPLATE = """
     line-height: 1.05;
     font-weight: 800;
     letter-spacing: -0.02em;
-    text-wrap: balance;
-    text-shadow: 0 2px 18px rgba(0,0,0,.5);
   }
 
   /* --- Card back --------------------------------------------------------- */
-  .back-content { text-align: left; }
+  .back-content {
+    text-align: left;
+    /* Safety valve: if a description ever outgrows a small screen it scrolls
+       here rather than being clipped. overscroll-behavior stops that scroll
+       from chaining into the deck and snapping to the next panel. */
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    padding: 4.5rem 2rem 6rem;
+  }
+  .back-content::-webkit-scrollbar { display: none; }
 
   .back h2 {
-    font-size: clamp(1.6rem, 7.5vw, 2.2rem);
+    font-size: clamp(1.5rem, 7vw, 2.05rem);
+    line-height: 1.12;
     font-weight: 800;
     letter-spacing: -0.02em;
-    margin-bottom: 1.4rem;
+    margin-bottom: 1.1rem;
   }
 
-  .back ul { list-style: none; }
+  .body {
+    font-size: clamp(.98rem, 4.2vw, 1.12rem);
+    line-height: 1.55;
+    opacity: .94;
+  }
+  .body strong { font-weight: 700; opacity: 1; }
 
-  .back li {
+  /* --- Info field ("Free for members" etc.) ------------------------------ */
+  .info {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    margin-top: 1.5rem;
+    padding: .6rem .9rem;
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: .75rem;
+    background: rgba(255,255,255,.13);
+    font-size: .88rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: left;
+  }
+  .info-icon { flex: 0 0 auto; width: 1.15rem; height: 1.15rem; opacity: .95; }
+  .info-icon svg { width: 100%; height: 100%; display: block; }
+
+  /* --- Recruiting sticker ------------------------------------------------ */
+  .sticker {
+    position: absolute;
+    z-index: 4;
+    top: calc(1.15rem + env(safe-area-inset-top, 0px));
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: .45rem .7rem;
+    border-radius: .6rem;
+    background: #ffd166;
+    color: #1a1c1f;
+    transform: rotate(4deg);
+    box-shadow: 0 4px 14px rgba(0,0,0,.35);
+  }
+  .sticker-top {
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    opacity: .75;
+  }
+  .sticker-role { font-size: .85rem; font-weight: 800; letter-spacing: -0.01em; }
+
+  /* --- Additional offerings list ----------------------------------------- */
+  .list-content { text-align: left; padding: 0 2rem; }
+  .list-title { text-align: left; }
+  .list-content .caption { text-align: left; }
+
+  .offers { list-style: none; margin-top: 1.6rem; }
+  .offers li {
     position: relative;
     padding-left: 1.6rem;
-    margin-bottom: 1rem;
-    font-size: clamp(1rem, 4.4vw, 1.15rem);
-    line-height: 1.45;
-    opacity: .95;
+    margin-bottom: .95rem;
+    font-size: clamp(1.02rem, 4.6vw, 1.2rem);
+    font-weight: 600;
+    line-height: 1.35;
+    text-shadow: 0 1px 10px rgba(0,0,0,.5);
   }
-
   /* Little sail-shaped bullet marker. */
-  .back li::before {
+  .offers li::before {
     content: "";
     position: absolute;
-    left: .1rem; top: .45em;
+    left: .1rem; top: .42em;
     width: 0; height: 0;
-    border-left: .42rem solid rgba(255,255,255,.85);
-    border-top: .3rem solid transparent;
-    border-bottom: .3rem solid transparent;
+    border-left: .45rem solid rgba(255,255,255,.9);
+    border-top: .32rem solid transparent;
+    border-bottom: .32rem solid transparent;
   }
+
+  /* --- Contact ----------------------------------------------------------- */
+  .contact-content { display: flex; flex-direction: column; align-items: center; width: 100%; }
+  .contact-logo { width: clamp(3.2rem, 18vw, 4.5rem); margin-bottom: .9rem; }
+  .contact-logo svg {
+    width: 100%; height: auto; display: block;
+    filter: drop-shadow(0 3px 14px rgba(0,0,0,.5));
+  }
+  .contact-title { font-size: clamp(1.7rem, 8.5vw, 2.5rem); }
+
+  .links { width: 100%; margin-top: 1.9rem; display: flex; flex-direction: column; gap: .7rem; }
+
+  .link-row {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    min-height: 52px;            /* comfortable thumb target */
+    padding: .7rem .95rem;
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: .85rem;
+    background: rgba(255,255,255,.13);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    text-decoration: none;
+  }
+  .link-row:active { background: rgba(255,255,255,.26); }
+
+  .link-icon { flex: 0 0 auto; width: 1.4rem; height: 1.4rem; }
+  .link-icon svg { width: 100%; height: 100%; display: block; }
+  .icon-insta { color: #f7a8c4; }
+  .icon-whatsapp { color: #6ee7a8; }
+
+  .link-label {
+    flex: 1 1 auto;
+    text-align: left;
+    font-size: .98rem;
+    font-weight: 600;
+    word-break: break-word;
+  }
+  .link-chevron { flex: 0 0 auto; opacity: .55; font-size: 1.1rem; }
 
   /* --- The tap target ---------------------------------------------------- */
   .pill {
     position: absolute;
-    bottom: 3.4rem;
+    bottom: calc(3.4rem + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
@@ -377,14 +326,12 @@ FLYER_TEMPLATE = """
     font: inherit;
     font-size: .95rem;
     font-weight: 600;
-    letter-spacing: .01em;
     cursor: pointer;
-    /* Comfortable thumb target: Apple's 44pt minimum. */
-    min-height: 44px;
+    min-height: 44px;            /* Apple's minimum touch target */
   }
   .pill:active { background: rgba(255,255,255,.3); }
 
-  /* Nudge the very first "More info" so visitors learn cards are tappable. */
+  /* Nudge the first "More info" so visitors learn cards are tappable. */
   #card-1 .front .pill { animation: hint 2.6s ease-in-out 1.2s 3; }
   @keyframes hint {
     0%, 100% { transform: translateX(-50%) scale(1); }
@@ -402,7 +349,7 @@ FLYER_TEMPLATE = """
   .dots {
     position: absolute; z-index: 3;
     right: 1rem; top: 50%; transform: translateY(-50%);
-    display: flex; flex-direction: column; gap: .5rem;
+    display: flex; flex-direction: column; gap: .45rem;
   }
   .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.35); }
   .dots i.on { background: #fff; }
@@ -476,7 +423,7 @@ FLYER_TEMPLATE = """
 </html>
 """
 
-FLYER = FLYER_TEMPLATE.replace("__PANELS__", PANELS_HTML)
+FLYER = FLYER_TEMPLATE.replace("__PANELS__", render_panels(PANELS))
 
 # --- Strip all Streamlit chrome and let the component fill the whole screen ---
 # NB: these data-testid / iframe title values are Streamlit internals and can be

@@ -34,5 +34,29 @@
     "licence": "Public domain",
     "author": "Scan by NYPL",
     "page": "https://commons.wikimedia.org/wiki/File:Atlantic_Ocean_(NYPL_b11707648-G90F454_040F).tiff"
+  },
+  "lago": {
+    "title": "Lago maggiore.jpg",
+    "licence": "CC BY-SA 3.0",
+    "author": "Ad Meskens",
+    "page": "https://commons.wikimedia.org/wiki/File:Lago_maggiore.jpg"
+  },
+  "hochsee": {
+    "title": "Mus\u00e9e d'histoire de Nantes - 430 - Sextant avec les optiques de rechange.jpg",
+    "licence": "CC BY-SA 4.0",
+    "author": "Koreller",
+    "page": "https://commons.wikimedia.org/wiki/File:Mus%C3%A9e_d%27histoire_de_Nantes_-_430_-_Sextant_avec_les_optiques_de_rechange.jpg"
+  },
+  "school": {
+    "title": "Sailing School, Scarborough South Bay.jpg",
+    "licence": "CC BY-SA 4.0",
+    "author": "Sudzie",
+    "page": "https://commons.wikimedia.org/wiki/File:Sailing_School,_Scarborough_South_Bay.jpg"
+  },
+  "contact": {
+    "title": "Firefly jolle.jpg",
+    "licence": "CC BY 4.0",
+    "author": "Unknown author Unknown author",
+    "page": "https://commons.wikimedia.org/wiki/File:Firefly_jolle.jpg"
   }
 }
