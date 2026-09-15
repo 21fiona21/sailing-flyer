@@ -226,7 +226,21 @@ FLYER_TEMPLATE = """
     overflow: hidden;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;   /* iOS needs the prefix */
+
+    /* backface-visibility alone is not enough: Safari leaks descendants of a
+       hidden face through when a child makes its own rendering context (our
+       text-shadows, the pill's backdrop-filter), so the front's title showed
+       up mirrored on the back. Hiding the inactive face outright is reliable.
+       visibility does not interpolate, so with a delay of half the flip it
+       switches exactly when the card is edge-on and invisible anyway. */
+    visibility: visible;
+    transition: visibility 0s linear 0.33s;
   }
+  .face * { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+
+  .back { visibility: hidden; }
+  .card.flipped .front { visibility: hidden; }
+  .card.flipped .back { visibility: visible; }
 
   .front {
     background-size: cover;
@@ -234,7 +248,7 @@ FLYER_TEMPLATE = """
     background-color: #0b3d6b;   /* shows while the photo decodes */
   }
 
-  .back { transform: rotateY(180deg); }
+  .back { transform: rotateY(180deg); }   /* visibility rules are above */
 
   /* Darkening layer so text stays readable over a busy photo. */
   .scrim {
@@ -363,6 +377,7 @@ FLYER_TEMPLATE = """
 
   @media (prefers-reduced-motion: reduce) {
     .card { transition: none; }
+    .face { transition: none; }
     .arrow, #card-1 .front .pill { animation: none; }
   }
 </style>
