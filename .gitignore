@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Full-size photo downloads; only the cropped 9:16 versions are committed
+images/*.jpg
+!images/*.9x16.jpg
