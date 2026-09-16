@@ -84,5 +84,3 @@ before trusting it.
   without `allow-top-navigation`, so same-tab navigation is blocked.
 - **Community Cloud apps sleep** after about a week idle and show a slow wake-up
   screen. Open the URL shortly before the fair.
-
-Placeholder photo licences: see `images/CREDITS.md`.
