@@ -1,13 +1,28 @@
 """Inline SVG icons. Inline so the flyer stays a single self-contained page."""
 
-# Club logo placeholder: transparent, white, reads over a photo.
-LOGO = """
-<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <path d="M52 6 L52 78 L90 78 Z" fill="#ffffff" opacity="0.95"/>
-  <path d="M46 26 L46 78 L14 78 Z" fill="#ffffff" opacity="0.7"/>
-  <path d="M6 84 q22 10 44 0 q22 -10 44 0 l0 8 q-22 -10 -44 0 q-22 10 -44 0 Z" fill="#ffffff" opacity="0.9"/>
-</svg>
-"""
+# Club logo, rebuilt as white artwork on transparency. The SVG the club
+# supplied wrapped a raster whose alpha came from luminance, which made the
+# background opaque and knocked the artwork out -- a white box on screen.
+# logo-mark is the roundel alone; logo-full includes the "HSG SAILING" wordmark.
+import base64
+from pathlib import Path
+
+_ASSETS = Path(__file__).parent / "assets"
+
+
+def _png_uri(name: str) -> str:
+    path = _ASSETS / name
+    if not path.exists():
+        return ""
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode()
+
+
+def logo_img(variant: str = "mark", css_class: str = "") -> str:
+    """<img> for the club logo. variant is "mark" or "full"."""
+    uri = _png_uri(f"logo-{variant}.png")
+    cls = f' class="{css_class}"' if css_class else ""
+    return f'<img src="{uri}" alt="HSG Sailing"{cls}>'
+
 
 _STROKE = ('viewBox="0 0 24 24" fill="none" stroke="currentColor" '
            'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"')

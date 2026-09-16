@@ -24,6 +24,7 @@ Deployed on Streamlit Community Cloud from `main`; pushing redeploys.
 | `icons.py` | Inline SVG logo and icons. |
 | `app.py` | Page shell: CSS, the sizing JS, and the Streamlit chrome overrides. |
 | `images/` | Photos, cropped to 9:16. Only the `.9x16.jpg` versions are committed. |
+| `assets/` | Club logo, white on transparency: `logo-mark.png` (roundel) and `logo-full.png` (with wordmark). |
 
 ## Editing the copy
 
@@ -33,28 +34,41 @@ to a panel for a recruiting sticker on both faces.
 
 ## Adding or replacing photos
 
-1. Drop the original in `images/` (originals are gitignored).
-2. Crop to 9:16 and compress:
+1. Drop the full-size original in `images/originals/` (gitignored).
+2. Crop and compress with Pillow — **not `sips`**, which ignores EXIF rotation
+   and silently turns portrait phone photos sideways:
 
-```bash
-cd images
-sips --resampleHeight 1280 yourphoto.jpg -o t.jpg
-sips -c 1280 720 t.jpg -o c.jpg
-sips -s format jpeg -s formatOptions 42 c.jpg -o <slug>.9x16.jpg
-rm t.jpg c.jpg
+```python
+from PIL import Image, ImageOps
+im = ImageOps.exif_transpose(Image.open("images/originals/x.jpg")).convert("RGB")
+out = ImageOps.fit(im, (720, 1280), method=Image.LANCZOS, centering=(0.5, 0.5))
+out.save("images/<slug>.9x16.jpg", "JPEG", quality=62, optimize=True, progressive=True)
 ```
 
-3. Point a panel's `image` at `<slug>`.
+3. Point a panel's `image` at `<slug>`. Omit `image` entirely and the panel
+   gets a gradient built from its `color` instead.
 
-Photos are **centre-cropped**, so check the subject is not cut off. They are
-inlined as base64 because the component runs in a srcdoc iframe where relative
-paths do not resolve — which is also why page weight matters: the whole flyer
-is currently about 1 MB, loaded over mobile data at the fair.
+Photos are **centre-cropped**, so check the subject survives. They are inlined
+as base64 because the component runs in a srcdoc iframe where relative paths do
+not resolve — which is also why page weight matters: the whole flyer is about
+1 MB, loaded over mobile data at the fair.
+
+Each panel's dark overlay is **computed from the photo**: `render.py` measures
+the brightness of the band where the headline sits and scales the scrim to
+match, so a bright sky gets more darkening than a dusk shot. Drop in a new
+photo and the contrast looks after itself.
 
 ## The logo
 
-`icons.py` holds a placeholder sail. Replace `LOGO` with the club's SVG —
-transparent background, single colour (white reads best over photos).
+`assets/logo-mark.png` (roundel) and `assets/logo-full.png` (roundel plus
+"HSG SAILING" wordmark), both white on transparency. The hero uses the mark,
+because the panel already says "HSG Sailing" in text; the contact page uses the
+full lockup.
+
+These were rebuilt from the club's SVG, which wrapped a raster whose alpha came
+from luminance — that made the background opaque and knocked out the artwork, so
+it rendered as a white box. If a new logo is supplied, check it over a photo
+before trusting it.
 
 ## Gotchas worth knowing
 

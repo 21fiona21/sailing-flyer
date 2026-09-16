@@ -1,9 +1,12 @@
 """Turns content.PANELS into the flyer's HTML."""
 
 import base64
+from functools import lru_cache
 from pathlib import Path
 
-from icons import ICONS, LOGO
+from PIL import Image
+
+from icons import ICONS, logo_img
 
 IMAGES = Path(__file__).parent / "images"
 
@@ -21,9 +24,51 @@ def photo_data_uri(slug: str) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(path.read_bytes()).decode()
 
 
+def _darken(hex_colour: str, factor: float = 0.55) -> str:
+    h = hex_colour.lstrip("#")
+    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
+    return "#%02x%02x%02x" % (int(r * factor), int(g * factor), int(b * factor))
+
+
 def _background(panel: dict) -> str:
     photo = photo_data_uri(panel.get("image", ""))
-    return f"url('{photo}')" if photo else panel["color"]
+    if photo:
+        return f"url('{photo}')"
+    # No photo: a deep gradient field rather than a flat block of colour.
+    return f'linear-gradient(165deg, {panel["color"]} 0%, {_darken(panel["color"])} 100%)'
+
+
+@lru_cache(maxsize=None)
+def _central_luminance(slug: str):
+    """Mean brightness of the band where the headline sits, 0-255."""
+    path = IMAGES / f"{slug}.9x16.jpg"
+    if not path.exists():
+        return None
+    im = Image.open(path).convert("L")
+    band = im.crop((0, int(im.height * 0.30), im.width, int(im.height * 0.70)))
+    return sum(band.getdata()) / (band.width * band.height)
+
+
+def _scrim(panel: dict, extra: float = 0.0) -> str:
+    """Darkening layer, scaled to how bright the photo actually is.
+
+    Measured rather than eyeballed: most of the club's photos are bright sky
+    and water right where the white headline goes, and a fixed scrim either
+    washed out the dark ones or left the bright ones unreadable.
+    """
+    if not panel.get("image"):
+        return ""            # gradient panels need no scrim
+    lum = _central_luminance(panel["image"])
+    if lum is None:
+        base = 0.42
+    else:
+        t = max(0.0, min(1.0, (lum - 90) / 95))      # 90 -> 0, 185 -> 1
+        base = 0.42 + t * 0.28
+    base = min(0.82, base + extra)
+    top, mid, bot = min(0.9, base + 0.06), base, min(0.92, base + 0.16)
+    return ('<div class="scrim" style="background: linear-gradient(180deg, '
+            f'rgba(0,0,0,{top:.2f}) 0%, rgba(0,0,0,{mid:.2f}) 45%, '
+            f'rgba(0,0,0,{bot:.2f}) 100%);"></div>')
 
 
 def _dots(index: int, total: int) -> str:
@@ -55,10 +100,10 @@ def _hero(panel: dict, index: int, total: int) -> str:
     <section class="panel">
       <div class="card">
         <div class="face front" style="background-image: {_background(panel)};">
-          <div class="scrim"></div>
+          {_scrim(panel)}
           <div class="content hero-content">
             <p class="greeting">{panel["greeting"]}</p>
-            <div class="hero-logo">{LOGO}</div>
+            <div class="hero-logo">{logo_img("mark")}</div>
             <h1 class="club">{panel["club"]}</h1>
             <p class="kicker">{panel["text"]}</p>
           </div>
@@ -76,7 +121,7 @@ def _flip(panel: dict, index: int, total: int) -> str:
     <section class="panel">
       <div class="card" id="card-{index}">
         <div class="face front" style="background-image: {_background(panel)};">
-          <div class="scrim"></div>
+          {_scrim(panel)}
           {sticker}
           <div class="content">
             <h1>{panel["title"]}</h1>
@@ -109,7 +154,7 @@ def _list(panel: dict, index: int, total: int) -> str:
     <section class="panel">
       <div class="card">
         <div class="face front" style="background-image: {_background(panel)};">
-          <div class="scrim scrim-strong"></div>
+          {_scrim(panel, extra=0.12)}
           <div class="content list-content">
             <h1 class="list-title">{panel["title"]}</h1>
             <p class="caption">{panel["caption"]}</p>
@@ -135,9 +180,9 @@ def _contact(panel: dict, index: int, total: int) -> str:
     <section class="panel">
       <div class="card">
         <div class="face front" style="background-image: {_background(panel)};">
-          <div class="scrim scrim-strong"></div>
+          {_scrim(panel, extra=0.12)}
           <div class="content contact-content">
-            <div class="contact-logo">{LOGO}</div>
+            <div class="contact-logo">{logo_img("full")}</div>
             <h1 class="contact-title">{panel["title"]}</h1>
             <p class="caption">{panel["caption"]}</p>
             <div class="links">{rows}</div>

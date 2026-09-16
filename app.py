@@ -94,18 +94,14 @@ FLYER_TEMPLATE = """
     background-position: center;
     background-color: #0b3d6b;   /* shows while the photo decodes */
   }
+  /* Wordmark logo already says "HSG SAILING", so give it room to breathe. */
+  .contact-logo { margin-bottom: 1.1rem; }
 
   .back { transform: rotateY(180deg); }
 
-  /* Darkening layer so text stays readable over a busy photo. */
-  .scrim {
-    position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(0,0,0,.5) 0%, rgba(0,0,0,.28) 45%, rgba(0,0,0,.68) 100%);
-  }
-  /* Panels whose front carries a lot of text need more contrast. */
-  .scrim-strong {
-    background: linear-gradient(180deg, rgba(0,0,0,.66) 0%, rgba(0,0,0,.58) 45%, rgba(0,0,0,.78) 100%);
-  }
+  /* Darkening layer so text stays readable over a busy photo. The gradient
+     itself is set inline per panel, scaled to that photo's brightness. */
+  .scrim { position: absolute; inset: 0; }
 
   .content {
     position: relative;
@@ -113,7 +109,18 @@ FLYER_TEMPLATE = """
     padding: 0 2rem;
     text-align: center;
     color: #fff;
+    /* min-width: 0 lets this flex item shrink below its longest word, so a
+       long compound like "Hochseeausweis" wraps instead of overflowing on a
+       narrow screen. Belt and braces with overflow-wrap below. */
+    width: 100%;
     max-width: 34rem;
+    min-width: 0;
+  }
+
+  /* Long compounds (Hochseeausweis, D-Schein) must not overflow. No
+     hyphens: auto -- it chopped body copy mid-word on nearly every line. */
+  h1, h2, .club, .caption, .body, .offers li, .link-label {
+    overflow-wrap: break-word;
   }
 
   h1 {
@@ -155,7 +162,7 @@ FLYER_TEMPLATE = """
   }
 
   .hero-logo { width: clamp(4.5rem, 27vw, 7rem); margin: 1.15rem 0 .95rem; }
-  .hero-logo svg {
+  .hero-logo img {
     width: 100%; height: auto; display: block;
     filter: drop-shadow(0 3px 14px rgba(0,0,0,.5));
   }
@@ -268,7 +275,7 @@ FLYER_TEMPLATE = """
   /* --- Contact ----------------------------------------------------------- */
   .contact-content { display: flex; flex-direction: column; align-items: center; width: 100%; }
   .contact-logo { width: clamp(3.2rem, 18vw, 4.5rem); margin-bottom: .9rem; }
-  .contact-logo svg {
+  .contact-logo img {
     width: 100%; height: auto; display: block;
     filter: drop-shadow(0 3px 14px rgba(0,0,0,.5));
   }

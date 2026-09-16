@@ -13,7 +13,7 @@ Keys:
 PANELS = [
     {
         "type": "hero",
-        "image": "welcome",
+        "image": "hero",
         "greeting": "Welcome aboard!",
         "club": "HSG Sailing",
         "text": "Scroll down",
@@ -21,7 +21,7 @@ PANELS = [
     },
     {
         "type": "flip",
-        "image": "beginner",
+        "image": "weekly",
         "title": "Weekly Sailing Sessions",
         "caption": "Every Saturday on Lake Constance",
         "body": (
@@ -37,7 +37,7 @@ PANELS = [
     },
     {
         "type": "flip",
-        "image": "theory",
+        "image": "theory-beginner",
         "title": "Beginner Theory Course",
         "caption": "Two evenings, from wind to knots",
         "body": (
@@ -51,7 +51,7 @@ PANELS = [
     },
     {
         "type": "flip",
-        "image": "hochsee",
+        "image": "theory-hochsee",
         "title": "Hochseeausweis Theory Course",
         "caption": "One intensive day, offshore ready",
         "body": (
@@ -125,11 +125,12 @@ PANELS = [
     },
     {
         "type": "list",
-        "image": "school",
+        "image": "offerings",
         "title": "Additional Offerings",
         "caption": "Organised by demand &mdash; just ask us",
         "bullets": [
             "Manoeuvre Trainings",
+            "Theory &amp; Practice Crash Course",
             "D-Schein Prep Sessions",
             "D-Schein &amp; Hochseeausweis Info Events",
         ],
@@ -138,7 +139,6 @@ PANELS = [
     },
     {
         "type": "contact",
-        "image": "contact",
         "title": "Come sail with us",
         "caption": "See you on the water!",
         "links": [
